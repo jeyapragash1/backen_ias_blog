@@ -1,3 +1,0 @@
-MONGODB_URI="mongodb+srv://admin:Dt7nAHjxNf9P7OFv@cluster0.46v8p6m.mongodb.net/SpaceSnap?retryWrites=true&w=majority&appName=Cluster0"
-JWT_SECRET="spacesnap_myjwt_secret_key_12345"
-JWT_REFRESH_SECRET="a_different_secret_key_for_refresh_67890"
