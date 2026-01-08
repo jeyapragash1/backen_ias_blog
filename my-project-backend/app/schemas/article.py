@@ -39,11 +39,13 @@ class ArticleOut(BaseModel):
     content: str
     status: str  # pending, approved, rejected
     isFeatured: bool = False
-    createdAt: datetime
-    updatedAt: datetime
+    # Accept snake_case from DB but expose camelCase to clients
+    createdAt: datetime = Field(alias="created_at")
+    updatedAt: datetime = Field(alias="updated_at")
     likesCount: int = 0
     viewCount: int = 0
     likes: List[str] = []  # List of IP/identifier of who liked
 
     class Config:
         from_attributes = True
+        populate_by_name = True

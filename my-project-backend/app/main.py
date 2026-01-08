@@ -22,29 +22,35 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="IAS UWU Blog API", version="0.1.0")
 
-# Parse CORS origins from environment
-origins_env = settings.frontend_url or ""
-origins = [o.strip() for o in origins_env.split(",") if o.strip()] if origins_env else []
-
 # Always allow localhost for development
-default_origins = [
+all_origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
 
-# Combine all origins (environment + defaults)
-all_origins = list(set(origins + default_origins))
+# Add environment-based origins if set
+origins_env = settings.frontend_url or ""
+if origins_env:
+    # Handle both single URL and comma-separated list
+    env_origins = [o.strip() for o in origins_env.split(",") if o.strip()]
+    all_origins.extend(env_origins)
+
+all_origins = list(set(all_origins))  # Remove duplicates
 
 logger.info(f"CORS allowed origins: {all_origins}")
 
+# Add CORS middleware FIRST (before other middleware/routes)
+# Using allow_origin_regex for more flexible matching
 app.add_middleware(
     CORSMiddleware,
     allow_origins=all_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,
 )
 
 @app.on_event("startup")
