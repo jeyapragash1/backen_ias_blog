@@ -8,6 +8,10 @@ from app.schemas.user import UserInDB
 from bson import ObjectId
 from datetime import datetime
 import re
+import logging
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -50,7 +54,7 @@ async def list_articles(
     if status:
         filt["status"] = status
 
-    cursor = COLLECTION().find(filt).skip(skip).limit(limit).sort("createdAt", -1)
+    cursor = COLLECTION().find(filt).skip(skip).limit(limit).sort("created_at", -1)
     items = [serialize(doc) async for doc in cursor]
     return {"items": items, "count": len(items)}
 
@@ -101,8 +105,8 @@ async def create_article(
         "viewCount": 0,
         "likesCount": 0,
         "likes": [],  # Track likers by IP/session
-        "createdAt": now,
-        "updatedAt": now
+        "created_at": now,
+        "updated_at": now
     }
     
     res = await COLLECTION().insert_one(article_dict)
@@ -119,8 +123,7 @@ async def get_my_articles(
     limit: int = Query(default=20, ge=1, le=100),
 ):
     """Get current user's submitted articles"""
-    # Debug: print user info
-    print(f"DEBUG - Current user ID: {current_user.id}, Email: {current_user.email}")
+    logger.info(f"Fetching articles for user: {current_user.email} (ID: {current_user.id})")
     
     # Try to find articles by authorId OR authorEmail as fallback
     filt = {
@@ -132,10 +135,7 @@ async def get_my_articles(
     cursor = COLLECTION().find(filt).skip(skip).limit(limit).sort("createdAt", -1)
     items = [serialize(doc) async for doc in cursor]
     
-    # Debug: print articles found
-    print(f"DEBUG - Found {len(items)} articles")
-    if items:
-        print(f"DEBUG - First article authorId: {items[0].get('authorId')}, authorEmail: {items[0].get('authorEmail')}")
+    logger.info(f"Found {len(items)} articles for user {current_user.email}")
     
     return {"items": items, "count": len(items)}
 

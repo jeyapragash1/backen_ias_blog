@@ -1,13 +1,3 @@
-// Google Auth API
-export const googleAuthAPI = {
-  login: async (credential) => {
-    const response = await api.post('/api/auth/google', { credential });
-    if (response.data.access_token) {
-      localStorage.setItem('token', response.data.access_token);
-    }
-    return response.data;
-  },
-};
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
@@ -18,6 +8,17 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Google Auth API
+export const googleAuthAPI = {
+  login: async (credential) => {
+    const response = await api.post('/api/auth/google', { credential });
+    if (response.data.access_token) {
+      localStorage.setItem('token', response.data.access_token);
+    }
+    return response.data;
+  },
+};
 
 // Image upload helper
 export const uploadAPI = {
@@ -85,6 +86,23 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Handle response errors (logout on 401)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Clear auth token on unauthorized
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      // Redirect to login if not already there
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
     return Promise.reject(error);
   }
 );

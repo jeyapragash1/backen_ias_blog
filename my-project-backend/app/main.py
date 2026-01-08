@@ -14,18 +14,34 @@ from app.api.routes.google_auth import router as google_auth_router
 from app.api.routes.engagement import router as engagement_router
 from app.db.mongo import connect_to_mongo, close_mongo_connection, get_db
 import os
+import cloudinary
+import logging
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="IAS UWU Blog API", version="0.1.0")
 
-origins_env = settings.frontend_url
-origins = [o.strip() for o in origins_env.split(",") if o.strip()] or [
+# Parse CORS origins from environment
+origins_env = settings.frontend_url or ""
+origins = [o.strip() for o in origins_env.split(",") if o.strip()] if origins_env else []
+
+# Always allow localhost for development
+default_origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
 ]
+
+# Combine all origins (environment + defaults)
+all_origins = list(set(origins + default_origins))
+
+logger.info(f"CORS allowed origins: {all_origins}")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=all_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -33,13 +49,34 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def on_startup():
-    await connect_to_mongo()
-    # Indexes for articles
-    await get_db()[settings.articles_collection].create_index("slug", unique=True)
-    await get_db()[settings.articles_collection].create_index("category")
-    await get_db()[settings.articles_collection].create_index("isFeatured")
-    # Indexes for users
-    await get_db()[settings.users_collection].create_index("email", unique=True)
+    try:
+        await connect_to_mongo()
+        logger.info("Connected to MongoDB")
+        
+        # Configure Cloudinary if credentials are available
+        if settings.cloudinary_cloud_name and settings.cloudinary_api_key and settings.cloudinary_api_secret:
+            cloudinary.config(
+                cloud_name=settings.cloudinary_cloud_name,
+                api_key=settings.cloudinary_api_key,
+                api_secret=settings.cloudinary_api_secret,
+                secure=True,
+            )
+            logger.info("Cloudinary configured successfully")
+        else:
+            logger.warning("Cloudinary credentials not fully configured")
+        
+        # Indexes for articles
+        await get_db()[settings.articles_collection].create_index("slug", unique=True)
+        await get_db()[settings.articles_collection].create_index("category")
+        await get_db()[settings.articles_collection].create_index("isFeatured")
+        logger.info("Article indexes created")
+        
+        # Indexes for users
+        await get_db()[settings.users_collection].create_index("email", unique=True)
+        logger.info("User indexes created")
+    except Exception as e:
+        logger.error(f"Startup error: {e}")
+        raise
 
 @app.on_event("shutdown")
 async def on_shutdown():
