@@ -1,7 +1,7 @@
 // src/components/ArticleCard.jsx
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { FaHeart, FaRegHeart, FaEye, FaComment } from 'react-icons/fa';
+import { FaHeart, FaRegHeart, FaEye, FaComment, FaUser } from 'react-icons/fa';
 import { engagementAPI, commentsAPI } from '../services/api';
 
 const ArticleCard = ({ article, index, onClick }) => {
@@ -78,7 +78,13 @@ const ArticleCard = ({ article, index, onClick }) => {
         </div>
         <div className="p-6">
           <div className="flex items-center gap-3 mb-4">
-            <img src={article.authorImage} alt={article.author} className="w-8 h-8 rounded-full object-cover" />
+            {article.authorImage ? (
+              <img src={article.authorImage} alt={article.author} className="w-8 h-8 rounded-full object-cover" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-[#00A39C] flex items-center justify-center text-white">
+                <FaUser size={14} />
+              </div>
+            )}
             <div className="text-sm">
               <p className="font-semibold text-slate-700">{article.author}</p>
               <p className="text-gray-500">{article.date}</p>
